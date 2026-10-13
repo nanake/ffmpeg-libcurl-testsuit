@@ -1,0 +1,41 @@
+services:
+  server:
+    image: caddy:2
+    command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./www:/srv:ro
+      - caddy-data:/data
+    networks:
+      testnet:
+        aliases:
+          - test.local
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+      - "8443:8443/udp"
+    environment:
+      AUTH_HASH: ${AUTH_HASH:?run ./run-tests.sh}
+
+  tester:
+    build: ./tester
+    working_dir: /work
+    volumes:
+      - ./bin:/work/bin:ro
+      - ./tests:/work/tests:ro
+      - ./www:/work/www:ro
+      - caddy-data:/caddy-data:ro
+    networks:
+      - testnet
+    depends_on:
+      - server
+    environment:
+      TEST_HOST: test.local
+      HTTP_PORT: 8080
+      HTTPS_PORT: 8443
+
+networks:
+  testnet:
+
+volumes:
+  caddy-data:
